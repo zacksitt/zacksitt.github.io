@@ -1,87 +1,3 @@
-<?php
-
-session_start();
-$message = "";
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-	if (isset($_POST['csrf_token']) && $_POST['csrf_token'] === $_SESSION['csrf_token']) {
-        // Process the form data
-		$name = $_POST["name"];
-		$email = $_POST["email"];
-		$subject = $_POST["subject"];
-		$message = $_POST["message"];
-		$key = $_POST["g-recaptcha-response"];
-		// Perform form validation, e.g., check for empty fields$
-		
-		if (!empty($name) && !empty($email) && !empty($message) && !empty($key)) {
-			// Form data is valid, proceed to send email
-			
-			try {
-				
-				$api_url = "https://www.google.com/recaptcha/api/siteverify";
-				$data = array(
-					'secret' => '6LfsF8spAAAAAJxQuONk9hH08luQLRUl2AD0zLTk',
-					'response' => $_POST["g-recaptcha-response"],
-					'remoteip' => ""
-				);
-				
-				$ch = curl_init($api_url);
-				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-				curl_setopt($ch, CURLOPT_POST, true);
-				curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-
-				$response = curl_exec($ch);
-				curl_close($ch);
-				$response = json_decode($response);
-				if($response && $response->success){
-
-					// echo $response;
-					$webhookUrl = "https://hooks.slack.com/services/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";
-					$message = "Name: " . $name . " \n Email: " . $email . " \n Message: " . $message;
-				
-					
-					$data = array(
-						"text" => $message,
-					);
-
-					$options = array(
-						"http" => array(
-							"header" => "Content-type: application/json",
-							"method" => "POST",
-							"content" => json_encode($data),
-						),
-					);
-
-					$context = stream_context_create($options);
-					$result = file_get_contents($webhookUrl, false, $context);
-					if ($result === false) {
-						$message =  "Error sending the message.";
-						
-					} else {
-						$message = "Message sent successfully.";
-						$_SESSION["sent"] = 1;
-					}
-					unset($_SESSION['csrf_token']);
-					
-				}
-				
-			} catch (\Exception $e) {
-				//throw $th;
-				throw $e;
-			}
-		
-		} else {
-			echo "Please fill in all the fields.";
-            $message = "Please fill in all the fields.";
-		}
-
-
-    } else {
-        // Token mismatch: handle refresh scenario
-        // ...
-    }
-}
-?>
 
 <!DOCTYPE HTML>
 <html>
@@ -790,24 +706,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
         <div class="choose animate-box">
             <p class="text-primary">
-                <?php 
-					if($message != "")
-						echo $message 
-				?>
+         
             </p>
             <h2>Contact</h2>
-            <?php 
-
-			// Generate a unique token
-			$token = bin2hex(random_bytes(32));
-			$_SESSION['csrf_token'] = $token;
-			?>
+        
             <form action="#" method="post">
                 <div class="row form-group">
                     <div class="col-md-6">
                         <input type="text" id="name" name="name" class="form-control" placeholder="Your name" required>
                         <input type="hidden" id="csrf_token" name="csrf_token" class="form-control"
-                            placeholder="Your name" required value="<?php echo $token; ?>">
+                            placeholder="Your name" required value="">
                     </div>
                 </div>
 
@@ -877,7 +785,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <!-- Main -->
     <script src="js/main.js"></script>
     <script>
-    var jsValue = <?php echo json_encode($message); ?>;
+    
     if (jsValue != "") {
         location.href = "#fh5co-consult";
         // document.getElementById("fh5co-consult").scrollIntoView();
